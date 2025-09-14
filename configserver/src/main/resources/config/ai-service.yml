@@ -1,35 +1,33 @@
-server:
-  port: 8083
-
 spring:
   application:
     name: ai-service
   data:
-      mongodb:
-        uri: mongodb://localhost:27017/fitnessrecommendation
-        database: fitnessrecommendation
-      rabbitmq:
-        host: localhost
-        port: 5672
-        username: guest
-        password: guest
+    mongodb:
+      uri: mongodb://root:password@mongodb:27017/fitnessrecommendation?authSource=admin
+      database: fitnessrecommendation
+    rabbitmq:
+      host: rabbitmq
+      port: 5672
+      username: rabbit
+      password: rabbitpass
 
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://eureka:8761/eureka/
 
 rabbitmq:
   exchange:
-    name: fitness.exchange
+    name: ai.exchange
   queue:
-    name: activity.queue
+    name: ai.queue
   routing:
-    key: activity.tracking
+    key: ai.tracking
 
 gemini:
   api:
     url: ${GEMINI_API_URL}
     key: ${GEMINI_API_KEY}
 
-
+server:
+  port: 8083

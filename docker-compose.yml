@@ -1,0 +1,133 @@
+version: '3.9'
+
+services:
+  # ==========================
+  # Config Server
+  # ==========================
+  configserver:
+    build:
+      context: ./configserver
+    container_name: configserver
+    ports:
+      - "8888:8888"
+
+  # ==========================
+  # Eureka Service Registry
+  # ==========================
+  eureka:
+    build:
+      context: ./eureka
+    container_name: eureka
+    ports:
+      - "8761:8761"
+    depends_on:
+      - configserver
+
+  # ==========================
+  # API Gateway
+  # ==========================
+  gateway:
+    build:
+      context: ./gateway
+    container_name: gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - configserver
+      - eureka
+
+  # ==========================
+  # Activity Service
+  # ==========================
+  activityservices:
+    build:
+      context: ./activityservices
+    container_name: activityservices
+    ports:
+      - "8082:8082"
+    env_file:
+      - .env
+    depends_on:
+      - configserver
+      - eureka
+      - postgres
+      - rabbitmq
+      - mongodb
+
+  # ==========================
+  # AI Service
+  # ==========================
+  aiservice:
+    build:
+      context: ./aiservice
+    container_name: aiservice
+    ports:
+      - "8083:8083"
+    env_file:
+      - .env
+    depends_on:
+      - configserver
+      - eureka
+      - rabbitmq
+      - mongodb
+
+  # ==========================
+  # User Service
+  # ==========================
+  userservice:
+    build:
+      context: ./userservice
+    container_name: userservice
+    ports:
+      - "8081:8081"
+    env_file:
+      - .env
+    depends_on:
+      - configserver
+      - eureka
+      - postgres
+
+  # ==========================
+  # Frontend (React App)
+  # ==========================
+  frontend:
+    build:
+      context: ./fitness-app-frontend
+    container_name: fitness-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - gateway
+
+  # ==========================
+  # Postgres
+  # ==========================
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1210
+      POSTGRES_DB: fitness_user_db
+    ports:
+      - "5433:5432"
+
+  # ==========================
+  # MongoDB
+  # ==========================
+  mongodb:
+    image: mongo:6
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+
+  # ==========================
+  # RabbitMQ
+  # ==========================
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"

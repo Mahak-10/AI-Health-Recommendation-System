@@ -1,17 +1,18 @@
-server:
-  port: 8081
-
 spring:
+  application:
+    name: user-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/fitness_user_db
+    url: jdbc:postgresql://postgres:5432/fitness_user_db
     username: postgres
     password: 1210
-
   jpa:
     hibernate:
-     ddl-auto: update
+      ddl-auto: update
 
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://eureka:8761/eureka/
+
+server:
+  port: 8081

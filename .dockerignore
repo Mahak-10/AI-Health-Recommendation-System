@@ -1,0 +1,49 @@
+# -----------------------
+# Java / Spring Boot
+# -----------------------
+target/
+*.jar
+.mvn/
+*.log
+
+# -----------------------
+# Node / React / Frontend
+# -----------------------
+node_modules/
+dist/
+build/
+.vite/
+npm-debug.log
+yarn-error.log
+
+# -----------------------
+# IDE / Editor Files
+# -----------------------
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.class
+.settings/
+*.project
+*.factorypath
+.springBeans
+.sts4-cache
+
+# -----------------------
+# Git
+# -----------------------
+.git/
+.gitignore
+
+# -----------------------
+# OS / Misc
+# -----------------------
+.DS_Store
+Thumbs.db
+
+# -----------------------
+# Environment / Secrets
+# -----------------------
+.env
