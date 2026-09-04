@@ -261,6 +261,16 @@ cd frontend && npm install && npm run dev
 
 ---
 
+## 🧗 Challenges Solved
+
+<!-- PLACEHOLDER: Add 2-3 real challenges you hit and how you solved them. Some starting points based on your architecture: -->
+
+- **Async latency without blocking the user** — Gemini API calls can be slow/unpredictable. Solved by decoupling activity logging from AI generation via RabbitMQ, so `POST /api/activities` returns immediately while recommendation generation happens asynchronously in the background.
+- **Securing service-to-service calls without shared session state** — Used stateless JWT validation at the Gateway via Keycloak's JWK certificates, so each service can independently verify a request's identity without a central session store.
+- **Choosing the right database per service** — Structured, relational user data went to PostgreSQL; flexible, evolving activity/recommendation schemas went to MongoDB, avoiding a one-size-fits-all data layer.
+
+---
+
 ## 🔮 Future Enhancements
 
 - 📊 Real-time dashboards for user health metrics
