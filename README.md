@@ -209,12 +209,62 @@ classDiagram
 
 ## 🛠️ Tech Stack
 
-**Backend:** Java 17, Spring Boot, Spring Cloud (Gateway, Config, Eureka)
-**Messaging:** RabbitMQ (`activity.exchange` → `activity.queue`)
-**Auth:** Keycloak (OAuth2/PKCE), JWT
-**Database:** PostgreSQL (`fitness_user_db`), MongoDB (`fitnessactivity`, `fitnessrecommendation`)
-**AI:** Google Gemini 2.5 Flash
-**Frontend:** React 18, Redux Toolkit, Vite, `react-oauth2-code-pkce`
+### Backend
+| Category | Technology |
+|---|---|
+| Language | Java 17 |
+| Framework | Spring Boot 3.x |
+| Microservices | Spring Cloud (Gateway, Config Server, Eureka, OpenFeign/RestTemplate for inter-service calls) |
+| API Style | RESTful APIs |
+| Build Tool | Maven |
+
+### Messaging & Async Processing
+| Category | Technology |
+|---|---|
+| Message Broker | RabbitMQ |
+| Pattern | Publish/Subscribe via exchange-queue binding (`activity.exchange` → `activity.queue`) |
+| Use Case | Decouples activity ingestion from AI recommendation generation |
+
+### Authentication & Security
+| Category | Technology |
+|---|---|
+| Identity Provider | Keycloak |
+| Auth Flow | OAuth2 Authorization Code Grant with PKCE |
+| Token Type | JWT (JSON Web Tokens) |
+| Token Validation | Stateless validation at API Gateway via Keycloak JWK certificates |
+| Frontend Auth Library | `react-oauth2-code-pkce` |
+
+### Databases
+| Category | Technology | Used By |
+|---|---|---|
+| Relational DB | PostgreSQL (`fitness_user_db`) | User Service — structured user profile data |
+| Document DB | MongoDB (`fitnessactivity`) | Activity Service — flexible activity/workout logs |
+| Document DB | MongoDB (`fitnessrecommendation`) | AI Service — AI-generated recommendation records |
+
+### AI Integration
+| Category | Technology |
+|---|---|
+| AI Provider | Google Gemini API |
+| Model | Gemini 2.5 Flash |
+| Integration Pattern | Structured prompt generation from activity metrics → AI response parsing → persistence |
+
+### Service Discovery & Configuration
+| Category | Technology |
+|---|---|
+| Service Registry | Netflix Eureka |
+| Config Management | Spring Cloud Config Server (centralized `*.yml` configs) |
+| Routing | Spring Cloud Gateway with load-balanced (`lb://`) service URIs |
+
+### Frontend
+| Category | Technology |
+|---|---|
+| Library | React 18 |
+| State Management | Redux Toolkit |
+| Build Tool | Vite |
+| UI | Dark-themed dashboard, MUI Icons |
+| Auth | `react-oauth2-code-pkce` (PKCE flow client) |
+
+
 
 ---
 
