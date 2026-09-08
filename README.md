@@ -1,4 +1,4 @@
-# 🩺 AI Health Recommendation System
+# 🩺 FitSphere — Health Recommendation System
 
 > Most fitness apps just log your numbers. This one tells you what they mean — an event-driven microservices platform that turns workout activity into personalized AI health recommendations in real time, powered by Google Gemini.
 
@@ -27,7 +27,7 @@
 
 Traditional fitness trackers store raw metrics (e.g., heart rate, steps, calories burned), but fail to convert this data into actionable, contextual health guidance. Furthermore, building real-time AI recommendations directly into monolithic HTTP workflows creates major bottlenecks due to LLM latency and API rate limits. 
 
-The **AI Health Recommendation System** solves this by establishing an **asynchronous, event-driven microservices architecture** that ingests fitness metrics, decouples AI payload processing, and delivers structured, safety-checked health insights without blocking user workflows.
+**FitSphere** solves this by establishing an **asynchronous, event-driven microservices architecture** that ingests fitness metrics, decouples AI payload processing, and delivers structured, safety-checked health insights without blocking user workflows.
 
 ---
 
@@ -36,46 +36,29 @@ The **AI Health Recommendation System** solves this by establishing an **asynchr
 The platform adopts a **polyglot persistence, event-driven microservices architecture** built on the Spring Cloud ecosystem. Requests pass through a centralized API Gateway secured by Keycloak OAuth2/PKCE. Workouts logged via the Activity Service persist to MongoDB and emit events to RabbitMQ. The AI Service consumes these events asynchronously, queries Google Gemini models using fallback strategies, and saves structured recommendations.
 
 ```mermaid
-graph TD
-    Client["React 18 Frontend\n(Port 3000 / 5173)"]
-    KC["Keycloak IDP\n(Port 8181)"]
-    Config["Config Server\n(Port 8888)"]
-    Eureka["Eureka Service Registry\n(Port 8761)"]
-    GW["API Gateway\n(Port 8080)"]
+graph LR
+    Client["📱 React Frontend\n(Port 3000)"]
+    KC["🔐 Keycloak IDP\n(Port 8181)"]
+    GW["🚪 API Gateway\n(Port 8080)"]
     
-    US["User Service\n(Port 8081)"]
-    AS["Activity Service\n(Port 8082)"]
-    AIS["AI Service\n(Port 8083)"]
+    subgraph Services ["Core Microservices"]
+        US["👤 User Service\n(PostgreSQL)"]
+        AS["🏃 Activity Service\n(MongoDB)"]
+        AIS["🤖 AI Service\n(MongoDB)"]
+    end
     
-    PG[(PostgreSQL\nfitness_user_db)]
-    MongoAct[(MongoDB\nfitnessactivity)]
-    MongoRec[(MongoDB\nfitnessrecommendation)]
-    RMQ{{RabbitMQ Broker\nactivity.exchange}}
-    Gemini(("Google Gemini API\n(Flash 3.6 / Fallbacks)"))
+    MQ["📩 RabbitMQ Broker"]
+    GEM["🧠 Google Gemini API"]
 
-    Client -->|1. OAuth2 PKCE Auth| KC
-    Client -->|2. REST Requests + Bearer JWT| GW
+    Client -->|1. Authenticate| KC
+    Client -->|2. REST Requests| GW
+    GW --> US
+    GW --> AS
+    GW --> AIS
     
-    GW -.->|Register/Discover| Eureka
-    US -.->|Register/Discover| Eureka
-    AS -.->|Register/Discover| Eureka
-    AIS -.->|Register/Discover| Eureka
-    
-    Config -.->|Distribute Config| GW
-    Config -.->|Distribute Config| US
-    Config -.->|Distribute Config| AS
-    Config -.->|Distribute Config| AIS
-    
-    GW -->|lb://user-service| US
-    GW -->|lb://activity-service| AS
-    GW -->|lb://ai-service| AIS
-
-    US -->|Persist Profile| PG
-    AS -->|Persist Activity| MongoAct
-    AS -->|Publish Activity Event| RMQ
-    RMQ -->|Consume Event| AIS
-    AIS -->|Fetch Insights| Gemini
-    AIS -->|Persist Recommendation| MongoRec
+    AS -->|Publish Workout Event| MQ
+    MQ -->|Consume Event| AIS
+    AIS -->|Generate Recommendations| GEM
 ```
 
 <!-- PLACEHOLDER: Add exported architecture diagram image here (draw.io / Excalidraw / Lucidchart export) -->
@@ -87,61 +70,47 @@ graph TD
 
 | Service | Port | Primary Responsibility | Tech Stack & Persistence |
 |---|---|---|---|
-| **Config Server** | `8888` | Centralized externalized configuration repository for all microservices | Spring Cloud Config, File System |
-| **Eureka Server** | `8761` | Dynamic service discovery registry and health checking | Spring Cloud Netflix Eureka |
+| **Config Server** | `8888` | Centralized configuration for all microservices | Spring Cloud Config, File System |
+| **Eureka Server** | `8761` | Dynamic service discovery registry | Spring Cloud Netflix Eureka |
 | **API Gateway** | `8080` | Unified entry point, JWT verification, dynamic load balancing | Spring Cloud Gateway, Keycloak JWK |
-| **User Service** | `8081` | User registration, profile validation, account metadata | Spring Boot, Spring Data JPA, PostgreSQL (`fitness_user_db`) |
-| **Activity Service** | `8082` | Ingests workouts, logs health metrics, triggers messaging events | Spring Boot, MongoDB (`fitnessactivity`), RabbitMQ (`activity.exchange`) |
-| **AI Service** | `8083` | Consumes activity events, prompts Gemini API, parses recommendations | Spring Boot, WebClient, MongoDB (`fitnessrecommendation`), Gemini 3.6 Flash |
-| **Keycloak IDP** | `8181` | Identity management, single sign-on (SSO), PKCE token authorization | Keycloak Realm (`fitness-oauth2`), OAuth2/OIDC |
-| **Frontend** | `3000`/`5173` | Interactive dashboard, exercise logger, live recommendation reader | React 18, Redux Toolkit, Vite, `react-oauth2-code-pkce` |
+| **User Service** | `8081` | User registration, profile validation | Spring Boot, PostgreSQL (`fitness_user_db`) |
+| **Activity Service** | `8082` | Ingests workouts, logs health metrics, triggers messaging events | Spring Boot, MongoDB (`fitnessactivity`), RabbitMQ |
+| **AI Service** | `8083` | Consumes activity events, prompts Gemini API, saves recommendations | Spring Boot, MongoDB (`fitnessrecommendation`), Gemini 3.6 Flash |
+| **Keycloak IDP** | `8181` | Identity management, OAuth2 PKCE authorization | Keycloak Realm (`fitness-oauth2`) |
+| **Frontend** | `3000`/`5173` | Interactive dashboard, exercise logger, AI insight reader | React 18, Redux Toolkit, Vite |
 
 ---
 
 ## 🔄 Control Flow Diagram
 
-Below is the step-by-step sequence detailing how a user authenticates, submits activity metrics, and retrieves async AI recommendations.
+Below is the simple sequence detailing how workout logging, async messaging, and AI insights flow through the system.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as User / Client Browser
-    participant KC as Keycloak IDP (8181)
-    participant FE as React Frontend (3000)
-    participant GW as API Gateway (8080)
-    participant AS as Activity Service (8082)
-    participant MQ as RabbitMQ Broker
-    participant AI as AI Service (8083)
-    participant GEM as Google Gemini API
+    actor User as User / Client
+    participant KC as Keycloak (Auth)
+    participant GW as API Gateway
+    participant AS as Activity Service
+    participant MQ as RabbitMQ
+    participant AI as AI Service
+    participant GEM as Gemini AI
 
-    User->>FE: 1. Click "Login / Register"
-    FE->>KC: 2. Initiate OAuth2 PKCE Authorization Code Request
-    KC-->>FE: 3. Authenticate User & Return Authorization Code
-    FE->>KC: 4. Exchange Auth Code for Access JWT Token
-    FE->>FE: 5. Store Token & User Profile in Redux State
-
-    User->>FE: 6. Submit Workout Activity Log
-    FE->>GW: 7. POST /api/activities (Header: Authorization Bearer JWT + X-User-ID)
-    GW->>GW: 8. Validate JWT Signature against Keycloak JWK Endpoint
-    GW->>AS: 9. Dynamic Route via Eureka (lb://activity-service)
-    AS->>AS: 10. Save Activity Document to MongoDB (fitnessactivity)
-    AS->>MQ: 11. Publish Event to RabbitMQ (activity.exchange -> activity.queue)
-    AS-->>FE: 12. Return 201 Created (Activity Saved Immediately)
-
-    MQ-->>AI: 13. Async Event Delivery (@RabbitListener)
-    AI->>AI: 14. Format Metrics into Structured JSON Prompt Schema
-    AI->>GEM: 15. POST /v1beta/models/gemini-3.6-flash:generateContent
-    alt Primary Gemini Model Rate-Limited (429/404)
-        AI->>GEM: 16. Fallback to secondary models (gemini-3.5-flash-lite / gemini-3.5-flash)
-    end
-    GEM-->>AI: 17. Return AI Analysis JSON Response
-    AI->>AI: 18. Parse Analysis, Safety Tips, & Improvements
-    AI->>AI: 19. Persist Recommendation to MongoDB (fitnessrecommendation)
-
-    User->>FE: 20. View Recommendations Tab
-    FE->>GW: 21. GET /api/recommendations/activity/{activityId}
-    GW->>AI: 22. Route to AI Service (lb://ai-service)
-    AI-->>FE: 23. Return Structured AI Insights & Safety Guidance
+    User->>KC: 1. Login & Get Access Token
+    User->>GW: 2. POST /api/activities (Log Workout)
+    GW->>AS: 3. Route Request to Activity Service
+    AS->>AS: 4. Save Workout to MongoDB
+    AS->>MQ: 5. Publish Workout Event (Async)
+    AS-->>User: 6. Return 201 Created (Instant UI Response)
+    
+    MQ-->>AI: 7. Deliver Workout Event to AI Service
+    AI->>GEM: 8. Request AI Recommendations
+    GEM-->>AI: 9. Return Structured Health Insights
+    AI->>AI: 10. Save Recommendation to MongoDB
+    
+    User->>GW: 11. GET /api/recommendations (View Insights)
+    GW->>AI: 12. Fetch Recommendation
+    AI-->>User: 13. Return AI Insights & Safety Tips
 ```
 
 ---
